@@ -151,7 +151,7 @@ def redraw_window(win, board):
 def main():
     win = pygame.display.set_mode((1200,600))
     pygame.display.set_caption("Crossword")
-    board = Grid(13, 13, 1200, 540,'EY', win)
+    board = Grid(13, 13, 1200, 540,'Metro_v1', win)
     board.words_full()
     key = None
     run = True
@@ -160,8 +160,8 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1:
-                    key = 1
+                if event.key == pygame.K_a:
+                    key = 'a'
                 if event.key == pygame.K_2:
                     key = 2
                 if event.key == pygame.K_3:
