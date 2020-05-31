@@ -28,6 +28,7 @@ class Grid:
         self.width = width
         self.height = height
         self.version = version
+        self.selected = None
         self.model = None
         self.win = win
 
@@ -128,6 +129,15 @@ class Grid:
             row, col = self.boundaries[self.version][i]
             pygame.draw.rect(self.win, (0, 0, 0), (col * (540 / 13), row * (540 / 13), (540 / 13) + 1, (540 / 13) + 1))
 
+    def select(self, row, col):
+        # Reset all other
+        for i in range(self.rows):
+            for j in range(self.cols):
+                self.tiles[i][j].selected = False
+
+        self.tiles[row][col].selected = True
+        self.selected = (row, col)
+
     def click(self, pos):
         """
         :param: pos
@@ -162,22 +172,57 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_a:
                     key = 'a'
-                if event.key == pygame.K_2:
-                    key = 2
-                if event.key == pygame.K_3:
-                    key = 3
-                if event.key == pygame.K_4:
-                    key = 4
-                if event.key == pygame.K_5:
-                    key = 5
-                if event.key == pygame.K_6:
-                    key = 6
-                if event.key == pygame.K_7:
-                    key = 7
-                if event.key == pygame.K_8:
-                    key = 8
-                if event.key == pygame.K_9:
-                    key = 9
+                if event.key == pygame.K_b:
+                    key = 'b'
+                if event.key == pygame.K_c:
+                    key = 'c'
+                if event.key == pygame.K_d:
+                    key = 'd'
+                if event.key == pygame.K_e:
+                    key = 'e'
+                if event.key == pygame.K_f:
+                    key = 'f'
+                if event.key == pygame.K_g:
+                    key = 'g'
+                if event.key == pygame.K_h:
+                    key = 'h'
+                if event.key == pygame.K_i:
+                    key = 'i'
+                if event.key == pygame.K_j:
+                    key = 'j'
+                if event.key == pygame.K_k:
+                    key = 'k'
+                if event.key == pygame.K_l:
+                    key = 'l'
+                if event.key == pygame.K_m:
+                    key = 'm'
+                if event.key == pygame.K_n:
+                    key = 'n'
+                if event.key == pygame.K_o:
+                    key = 'o'
+                if event.key == pygame.K_p:
+                    key = 'p'
+                if event.key == pygame.K_q:
+                    key = 'q'
+                if event.key == pygame.K_r:
+                    key = 'r'
+                if event.key == pygame.K_s:
+                    key = 's'
+                if event.key == pygame.K_t:
+                    key = 't'
+                if event.key == pygame.K_u:
+                    key = 'u'
+                if event.key == pygame.K_v:
+                    key = 'v'
+                if event.key == pygame.K_w:
+                    key = 'w'
+                if event.key == pygame.K_x:
+                    key = 'x'
+                if event.key == pygame.K_y:
+                    key = 'y'
+                if event.key == pygame.K_z:
+                    key = 'z'
+
                 if event.key == pygame.K_DELETE:
                     board.clear()
                     key = None
