@@ -19,7 +19,9 @@ boundaries = {
 
 # The grid (13x13)
 tiles = [(i, j) for i in range(13) for j in range(13)]
+
 highlighted_tile = None
+previous_tile = None
 
 
 def get_word_coords(version):
@@ -113,6 +115,23 @@ def words_full(version):
     return words_full_df
 
 
+def show_highlighted_word(version):
+    df = words_full(version=version)
+    if previous_tile != highlighted_tile:
+        for x, y in df.iterrows():
+            if highlighted_tile in y['coords']:
+                highlighted_word = y['coords']
+                break
+    elif previous_tile == highlighted_tile:
+        df = df.iloc[::-1]
+        for x, y in df.iterrows():
+            if highlighted_tile in y['coords']:
+                highlighted_word = y['coords']
+                break
+
+    return highlighted_word
+
+
 def draw(win, height, rows, version):
     # Draw Grid Lines
     gap = height / 13
@@ -127,7 +146,9 @@ def draw(win, height, rows, version):
     if highlighted_tile is None or highlighted_tile in boundaries[version]:
         pass
     else:
-        pygame.draw.rect(win, (255, 0, 0), (highlighted_tile[1] * gap, highlighted_tile[0] * gap, gap, gap), 5)
+        # pygame.draw.rect(win, (255, 0, 0), (highlighted_tile[1] * gap, highlighted_tile[0] * gap, gap, gap), 5)
+        for i in show_highlighted_word(version=version):
+            pygame.draw.rect(win, (255, 0, 0), (i[1] * gap, i[0] * gap, gap, gap), 5)
 
 
 def redraw_window(win, height, rows, version):
@@ -142,6 +163,9 @@ def click(pos, height):
     :return: (row, col)
     """
     global highlighted_tile
+    global previous_tile
+
+    previous_tile = highlighted_tile
 
     if pos[0] < height and pos[1] < height:
         gap = height / 13
