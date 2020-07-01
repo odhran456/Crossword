@@ -1,27 +1,25 @@
 import pygame
 import pandas as pd
 
+pygame.font.init()
 
 boundaries = {
-        'Metro_v1': [(0, 1), (0, 3), (0, 5), (0, 6), (1, 8), (1, 10), (1, 12), (2, 1), (2, 3), (2, 5), (2, 6), (3, 5),
-                      (3, 10), (3, 12),
-                      (4, 4), (4, 9), (5, 0), (5, 2), (5, 7), (5, 12), (6, 0), (6, 1), (6, 11), (6, 12), (7, 0), (7, 5),
-                      (7, 10), (7, 12),
-                      (8, 3), (8, 8), (9, 0), (9, 2), (9, 7), (10, 6), (10, 7), (10, 9), (10, 11), (11, 0), (11, 2),
-                      (11, 4), (12, 6),
-                      (12, 7), (12, 9), (12, 11)],
-        'EY': [(2, 2), (2, 3), (2, 4), (2, 5), (3, 2), (4, 2), (5, 2), (6, 2), (6, 3), (6, 4), (6, 5), (7, 2),
-                      (8, 2), (9, 2),
-                      (10, 2), (10, 3), (10, 4), (10, 5), (2, 8), (2, 12), (3, 9), (3, 11), (4, 10), (5, 10), (6, 10),
-                      (7, 10),
-                      (8, 10), (9, 10), (10, 10)]
-        }
+    'Metro_v1': [(0, 1), (0, 3), (0, 5), (0, 6), (1, 8), (1, 10), (1, 12), (2, 1), (2, 3), (2, 5), (2, 6), (3, 5),
+                 (3, 10), (3, 12), (4, 4), (4, 9), (5, 0), (5, 2), (5, 7), (5, 12), (6, 0), (6, 1), (6, 11), (6, 12),
+                 (7, 0), (7, 5), (7, 10), (7, 12), (8, 3), (8, 8), (9, 0), (9, 2), (9, 7), (10, 6), (10, 7), (10, 9),
+                 (10, 11), (11, 0), (11, 2), (11, 4), (12, 6), (12, 7), (12, 9), (12, 11)],
+    'EY': [(2, 2), (2, 3), (2, 4), (2, 5), (3, 2), (4, 2), (5, 2), (6, 2), (6, 3), (6, 4), (6, 5), (7, 2), (8, 2),
+           (9, 2), (10, 2), (10, 3), (10, 4), (10, 5), (2, 8), (2, 12), (3, 9), (3, 11), (4, 10), (5, 10), (6, 10),
+           (7, 10), (8, 10), (9, 10), (10, 10)]
+}
 
 # The grid (13x13)
 tiles = [(i, j) for i in range(13) for j in range(13)]
 
 highlighted_tile = None
 previous_tile = None
+current_tile = None
+current_board = None
 
 
 def get_word_coords(version):
@@ -111,7 +109,7 @@ def words_full(version):
             coords_of_word = find_coords_down(start=df.iloc[i]['down'], end=end)
             list_of_words.append([df.iloc[i]['down'], 'down', len(coords_of_word), coords_of_word])
     words_full_df = pd.DataFrame(list_of_words, columns=['start', 'drn', 'len', 'coords'])
-    print(words_full_df)
+    # print(words_full_df)
     return words_full_df
 
 
@@ -122,6 +120,7 @@ def show_highlighted_word(version):
             if highlighted_tile in y['coords']:
                 highlighted_word = y['coords']
                 break
+    # if you click on the same tile twice, swap from vertical word to horizontal word
     elif previous_tile == highlighted_tile:
         df = df.iloc[::-1]
         for x, y in df.iterrows():
@@ -133,6 +132,8 @@ def show_highlighted_word(version):
 
 
 def draw(win, height, rows, version):
+    fnt = pygame.font.SysFont("comicsans", 40)
+
     # Draw Grid Lines
     gap = height / 13
     for i in range(rows + 1):
@@ -149,6 +150,11 @@ def draw(win, height, rows, version):
         # pygame.draw.rect(win, (255, 0, 0), (highlighted_tile[1] * gap, highlighted_tile[0] * gap, gap, gap), 5)
         for i in show_highlighted_word(version=version):
             pygame.draw.rect(win, (255, 0, 0), (i[1] * gap, i[0] * gap, gap, gap), 5)
+    # Draw filled in letters
+    for tile_loc, letter in current_board.items():
+        text = fnt.render(letter, 1, (0, 0, 0))
+        if letter is not None:
+            win.blit(text, (tile_loc[1] * gap + (gap/3), tile_loc[0] * gap + (gap/4)))
 
 
 def redraw_window(win, height, rows, version):
@@ -164,7 +170,7 @@ def click(pos, height):
     """
     global highlighted_tile
     global previous_tile
-
+    # This is a measure to swap from vertical word to horizontal word
     previous_tile = highlighted_tile
 
     if pos[0] < height and pos[1] < height:
@@ -188,12 +194,29 @@ def main():
     key = None
     version = 'Metro_v1'
 
-    words_full(version=version)
+    # words_full(version=version)
+    # Make a dict storing the value for each tile
+    global current_board
+    # Whenever you click a square, the current tile you can edit will become the first tile in that word. If you type in
+    # a letter, the current tile will become the next letter in that word. If you click on a new square, you will jump
+    # to the first tile of the next word.
+    global current_tile
+    current_board = dict.fromkeys([x for x in tiles if x not in boundaries[version]], None)
 
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                pos = pygame.mouse.get_pos()
+                clicked = click(pos, height)
+                if clicked:
+                    # this tracks what letter in the word you are
+                    list_position = 0
+                    current_tile = show_highlighted_word(version=version)[list_position]
+                    key = None
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_a:
                     key = 'a'
@@ -248,16 +271,18 @@ def main():
                 if event.key == pygame.K_z:
                     key = 'z'
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                pos = pygame.mouse.get_pos()
-                clicked = click(pos, height)
-                if clicked:
-                    print(clicked[0], clicked[1])
-                    key = None
+        # When you type in a key, update that value in the dictionary of letters, and turn off the key and clicked.
+        # Pressing a key or clicking somewhere will lead to the next letter.
+        if key:
+            current_board[current_tile] = key
+            key = None
+            # if you haven't reached the end of the word yet, move on step farther
+            if len(show_highlighted_word(version=version)) > list_position + 1:
+                list_position += 1
+                current_tile = show_highlighted_word(version=version)[list_position]
 
         redraw_window(win=win, height=height, rows=rows, version=version)
         pygame.display.update()
 
 
 main()
-
