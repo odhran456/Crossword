@@ -23,6 +23,7 @@ highlighted_tile = None
 previous_tile = None
 current_tile = None
 current_board = None
+auto_complete_additions = []
 
 
 def get_word_coords(version):
@@ -201,18 +202,17 @@ def click(pos, height, version):
 
 def auto_complete(version, word_num, trial):
     # some sort of back tracker algo . . .
-
     curr_word_coords = words_full(version).iloc[word_num]['coords']
+    changed_letters = []
 
     # pick a random word from the appropriate list of english words of the correct length
     curr_word_len = words_full(version).iloc[word_num]['len']
     n_letter_words = pd.read_csv('words/' + str(curr_word_len) + '.csv')
-    # word_candidate = n_letter_words.iloc[randrange(n_letter_words.shape[0])][0]
 
-    # a priori: if we've tried every word and none fits it's time to back track
+    # Check if your trial num is out of bounds due to iterations
     if trial > n_letter_words.shape[0] - 1:
-        print('Backtrack . . .')
-        return True
+        word_candidate = 'Delete_current_word'
+        return word_candidate, curr_word_coords, trial, changed_letters
 
     word_candidate = n_letter_words.iloc[trial][0]
     print(word_candidate, str(trial) + '/' + str(n_letter_words.shape[0]))
@@ -222,13 +222,20 @@ def auto_complete(version, word_num, trial):
         if current_board[curr_word_coords[count]] is None or current_board[curr_word_coords[count]] == word_candidate[count]:
             continue
         else:
-            return False
+            # if the word does not fit, recursively run the function until a word down the line fits. The whole function
+            # will just return the first word it comes across that fits, and the co-ordinates of where to put that word.
+            # When you are iterating through the trial word in 3.csv etc, your trial+=1 will eventually lead to out of
+            # range error. Near the start of auto_complete(), check is trial in bounds!
+            word_candidate, curr_word_coords, trial, changed_letters = auto_complete(version, word_num, trial + 1)
 
-    # put that word in the slot, by putting each letter into each slot in the whole board view
-    for i in range(len(curr_word_coords)):
-        current_board[curr_word_coords[i]] = word_candidate[i]
+    # You now have the word that is going to be added. In order to allow deletion of the word in the future, let's
+    # figure out which slots in the word are currently empty
+    for square in curr_word_coords:
+        if current_board[square] is None:
+            changed_letters.append(square)
 
-    return True
+    # This function will return a word that fits into the slot, and which slot it fits into.
+    return word_candidate, curr_word_coords, trial, changed_letters
 
 
 def main():
@@ -243,6 +250,8 @@ def main():
 
     iteration_count = 0
     trial_count = 0
+    # Make a tracker that checks what candidate you've added to the board so it can be removed if it leads nowhere.
+    global auto_complete_additions
 
     # Make a dict storing the value for each tile
     global current_board
@@ -327,12 +336,32 @@ def main():
                     # if the word fits, move onto the next empty slot. Otherwise, if it returns false, it won't move on
                     # and it will just try another word in there. Cycle through the words in the n_letter.csv, if a
                     # word fits reset the trial count, but otherwise keep going until you try all the words in the csv
-                    if auto_complete(version, word_num=iteration_count, trial=trial_count):
-                        trial_count = 0
+
+                    word, coords, trial_num_of_word, changed_coords = auto_complete(version=version, word_num=iteration_count, trial=trial_count)
+                    print(word, coords)
+
+                    if word == 'Delete_current_word':
+                        # Delete the last word you've added in, go back to that slot, and pick up from where you left
+                        # off in the list
+                        for tup in auto_complete_additions[-1][0]:
+                            current_board[tup] = None
+                        iteration_count -= 1
+                        trial_count = auto_complete_additions[-1][1] + 1
+
+                        del auto_complete_additions[-1]
+
+                    else:
+                        # put that word in the slot, by putting each letter into each slot in the whole board view
+                        for i in range(len(coords)):
+                            current_board[coords[i]] = word[i]
+                        # Move on to next slot to fill
                         if iteration_count < words_full(version).shape[0] - 1:
                             iteration_count += 1
-                    else:
-                        trial_count += 1
+                        # If the word fits add it to the tracker of current words on the board.
+                        auto_complete_additions.append([changed_coords, trial_num_of_word])
+                        print(auto_complete_additions)
+                        # reset the trial_count to 0 as you're moving onto the next slot
+                        trial_count = 0
 
         # When you type in a key, update that value in the dictionary of letters, and turn off the key and clicked.
         # Pressing a key or clicking somewhere will lead to the next letter.
